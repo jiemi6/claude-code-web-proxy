@@ -1,0 +1,35 @@
+{
+  "name": "claude-code-web-proxy",
+  "version": "1.0.0",
+  "description": "Web UI proxy for the local Claude Code CLI — manage multiple persistent Claude Code sessions from your browser.",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "node --watch backend/server.js"
+  },
+  "keywords": [
+    "claude",
+    "claude-code",
+    "claude-code-cli",
+    "web-ui",
+    "proxy",
+    "websocket",
+    "mcp"
+  ],
+  "author": "minkey <minkey611@gmail.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/jiemi6/claude-code-web-proxy#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jiemi6/claude-code-web-proxy.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jiemi6/claude-code-web-proxy/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}
