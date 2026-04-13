@@ -53,7 +53,7 @@ npm install
 
 ```bash
 # 推荐方式（自动配置 PATH 并安装依赖）
-./start.sh
+./deploy.sh start
 
 # 或者直接启动
 npm start
@@ -173,7 +173,7 @@ claude-code-web-proxy/
 ├── frontend/
 │   ├── index.html             # 单页应用
 │   └── static/style.css       # 样式
-├── start.sh                   # 启动脚本
+├── deploy.sh                  # 启动/管理脚本
 └── docs/                      # 文档（API.md、README.en.md 等）
 ```
 

@@ -53,7 +53,7 @@ The project has a single runtime dependency (`ws`), so install is fast.
 
 ```bash
 # Recommended (auto-configures PATH and installs deps)
-./start.sh
+./deploy.sh start
 
 # Or directly
 npm start
@@ -171,7 +171,7 @@ claude-code-web-proxy/
 ├── frontend/
 │   ├── index.html             # Single-page app
 │   └── static/style.css       # Styles
-├── start.sh                   # Start script
+├── deploy.sh                  # Start/manage script
 └── docs/                      # Documentation (API.md, README.en.md, etc.)
 ```
 

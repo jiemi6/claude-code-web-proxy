@@ -7,10 +7,25 @@ APP_NAME="claude-code-web-proxy"
 PID_FILE="$SCRIPT_DIR/.pid"
 LOG_FILE="$SCRIPT_DIR/app.log"
 
-# HOST defaults to the machine's LAN IPv4 (auto-detected by backend/server.js)
-# if unset. Override to restrict (e.g. HOST=127.0.0.1) or expose publicly.
-export HOST="${HOST:-}"
+# MODE controls the bind address (default: lan):
+#   loopback - 127.0.0.1 only (this machine)
+#   lan      - auto-detected LAN IPv4 (reachable from local network)
+#   wan      - 0.0.0.0 (all interfaces, including public — use with care)
+# HOST overrides MODE if explicitly set.
+export MODE="${MODE:-lan}"
 export PORT="${PORT:-8199}"
+
+resolve_host() {
+  if [ -n "$HOST" ]; then
+    return
+  fi
+  case "$MODE" in
+    loopback|local) export HOST="127.0.0.1" ;;
+    lan|"")         export HOST="" ;;  # empty → server.js auto-detects LAN IPv4
+    wan|all|public) export HOST="0.0.0.0" ;;
+    *) red "Unknown MODE: $MODE (expected loopback|lan|wan)"; exit 1 ;;
+  esac
+}
 
 # Node.js version requirement
 NODE_MAJOR_MIN=18
@@ -113,9 +128,14 @@ ensure_deps() {
 
 do_start() {
   local fg=false
-  if [ "$1" = "--fg" ] || [ "$1" = "-f" ]; then
-    fg=true
-  fi
+  for arg in "$@"; do
+    case "$arg" in
+      --fg|-f) fg=true ;;
+      --mode=*) export MODE="${arg#--mode=}" ;;
+    esac
+  done
+
+  resolve_host
 
   if pid=$(get_pid); then
     yellow "$APP_NAME is already running (PID: $pid)"
@@ -192,7 +212,10 @@ do_restart() {
 do_status() {
   if pid=$(get_pid); then
     green "$APP_NAME is running (PID: $pid)"
-    echo "  URL: http://$HOST:$PORT"
+    local bind
+    bind=$(ss -tlnp 2>/dev/null | awk -v p="$PORT" '$4 ~ ":"p"$" {print $4; exit}')
+    [ -z "$bind" ] && bind="(unknown):$PORT"
+    echo "  URL: http://$bind"
     echo "  Log: $LOG_FILE"
     echo "  Uptime: $(ps -p "$pid" -o etime= 2>/dev/null | xargs)"
     echo "  Memory: $(ps -p "$pid" -o rss= 2>/dev/null | awk '{printf "%.1f MB", $1/1024}')"
@@ -235,25 +258,29 @@ Commands:
   help             Show this help
 
 Environment variables:
-  HOST             Bind address (default: auto-detected LAN IPv4)
-  PORT             Listen port  (default: 8199)
+  MODE             loopback | lan | wan  (default: lan)
+                     loopback - 127.0.0.1 only
+                     lan      - auto-detected LAN IPv4 (default)
+                     wan      - 0.0.0.0 (all interfaces, public)
+  HOST             Explicit bind address (overrides MODE)
+  PORT             Listen port (default: 8199)
 
 Examples:
-  $0 start                  # Start in background
-  $0 start --fg             # Start in foreground (for debugging)
-  $0 log                    # Show last 50 lines
-  $0 log 200                # Show last 200 lines
-  $0 log -f                 # Follow log in real-time
-  PORT=9000 $0 start        # Start on custom port
+  $0 start                       # LAN mode (default)
+  $0 start --mode=loopback       # local only
+  $0 start --mode=wan            # bind 0.0.0.0
+  $0 start --fg                  # Foreground (debug)
+  MODE=wan $0 start              # Same via env var
+  PORT=9000 $0 start             # Custom port
 EOF
 }
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
 
 case "${1:-help}" in
-  start)   do_start "$2" ;;
+  start)   shift; do_start "$@" ;;
   stop)    do_stop ;;
-  restart) do_restart "$2" ;;
+  restart) shift; do_restart "$@" ;;
   status)  do_status ;;
   log)     do_log "$2" ;;
   help|-h|--help) do_help ;;
